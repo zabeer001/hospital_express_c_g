@@ -8,7 +8,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-hospital_password}
       POSTGRES_DB: ${POSTGRES_DB:-hospital_management}
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - "${POSTGRES_PORT}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
@@ -31,7 +31,7 @@ services:
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
       CHOKIDAR_USEPOLLING: "true"
     ports:
-      - "${PORT:-4000}:4000"
+      - "${PORT}:4000"
     volumes:
       - ./src:/app/src:ro
       - ./prisma:/app/prisma:ro
@@ -48,7 +48,7 @@ services:
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin123}
       PGADMIN_REPLACE_SERVERS_ON_STARTUP: "True"
     ports:
-      - "${PGADMIN_PORT:-5050}:80"
+      - "${PGADMIN_PORT}:80"
     depends_on:
       db:
         condition: service_healthy
