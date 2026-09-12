@@ -1,0 +1,12 @@
+model Doctor {
+  id             Int      @id @default(autoincrement())
+  name           String
+  specialization String
+  hospital       String?
+  phone          String?
+  email          String?  @unique
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  patients Patient[]
+}

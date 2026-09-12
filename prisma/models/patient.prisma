@@ -1,0 +1,22 @@
+model Patient {
+  id               Int           @id @default(autoincrement())
+  doctorId         Int
+  name             String
+  age              Int
+  gender           PatientGender
+  phone            String?
+  condition        String?
+  status           PatientStatus @default(Active)
+  admittedAt       DateTime      @default(now())
+  appointmentAt    DateTime?
+  visitCompletedAt DateTime?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  doctor Doctor @relation(fields: [doctorId], references: [id], onDelete: Restrict)
+
+  @@index([doctorId])
+  @@index([status])
+  @@index([admittedAt])
+  @@index([appointmentAt])
+}

@@ -1,0 +1,11 @@
+enum PatientGender {
+  Female
+  Male
+  Other
+}
+
+enum PatientStatus {
+  Active
+  Monitoring
+  Recovered
+}
