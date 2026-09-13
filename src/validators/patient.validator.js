@@ -33,7 +33,9 @@ async function validatePatient(body, { partial = false } = {}) {
   }
   if (result.doctorId !== undefined) result.doctorId = Number(result.doctorId);
   if (result.age !== undefined) result.age = Number(result.age);
-  if (result.admittedAt !== undefined) result.admittedAt = new Date(`${result.admittedAt}T00:00:00.000Z`);
+  if (result.admittedAt !== undefined && result.admittedAt !== null) {
+    result.admittedAt = new Date(`${result.admittedAt}T00:00:00.000Z`);
+  }
   if (result.appointmentAt !== undefined) result.appointmentAt = nullableDate(result.appointmentAt);
   if (result.visitCompletedAt !== undefined) result.visitCompletedAt = nullableDate(result.visitCompletedAt);
   return result;

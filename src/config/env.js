@@ -16,6 +16,7 @@ function positiveInteger(value, fallback) {
 const env = {
   nodeEnv: process.env.NODE_ENV || "development",
   port: Number(process.env.PORT || 4000),
+  requestTimeoutMs: positiveInteger(process.env.REQUEST_TIMEOUT_MS, 10000),
   databaseUrl:
     process.env.DATABASE_URL ||
     "postgresql://hospital_user:hospital_password@localhost:5432/hospital_management",

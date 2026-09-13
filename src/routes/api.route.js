@@ -5,6 +5,7 @@ import doctorRouter from "./doctor.route.js";
 import patientRouter from "./patient.route.js";
 import authRouter from "./auth.route.js";
 import accessRouter from "./access.route.js";
+import bookingRouter from "./booking.route.js";
 
 const apiRouter = express.Router();
 
@@ -14,6 +15,7 @@ apiRouter.use("/auth", authRouter);
 apiRouter.use(accessRouter);
 apiRouter.use("/doctors", doctorRouter);
 apiRouter.use("/patients", patientRouter);
+apiRouter.use("/bookings", bookingRouter);
 apiRouter.use("/dashboard", dashboardRouter);
 
 export default apiRouter;

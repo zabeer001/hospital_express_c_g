@@ -140,6 +140,7 @@ INSERT INTO "Permission" ("name") VALUES
   ('doctors.index'), ('doctors.show'), ('doctors.create'), ('doctors.update'), ('doctors.delete'),
   ('patients.index'), ('patients.show'), ('patients.create'), ('patients.update'), ('patients.delete'),
   ('patients.complete-visit'),
+  ('bookings.index'), ('bookings.show'), ('bookings.create'), ('bookings.update'), ('bookings.delete'),
   ('roles.manage'), ('users.manage')
 ON CONFLICT ("name") DO NOTHING;
 

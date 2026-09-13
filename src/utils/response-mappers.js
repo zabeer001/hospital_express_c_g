@@ -38,4 +38,14 @@ function toPatientResponse(record) {
   };
 }
 
-export { toDoctorResponse, toPatientResponse };
+function toBookingResponse(record) {
+  if (!record) return null;
+  const { patient, doctor, ...booking } = record;
+  return {
+    ...booking,
+    ...(patient && { patient }),
+    ...(doctor && { doctor }),
+  };
+}
+
+export { toBookingResponse, toDoctorResponse, toPatientResponse };

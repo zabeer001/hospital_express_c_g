@@ -4,28 +4,47 @@ import { deletePatientService } from "./services/deletePatient.patient.service.j
 import { getPatientService } from "./services/getPatient.patient.service.js";
 import { getPatientsService } from "./services/getPatients.patient.service.js";
 import { updatePatientService } from "./services/updatePatient.patient.service.js";
+import { sendSuccess } from "../../utils/api-response.js";
 
 export async function getPatients(req, res) {
-  res.json(await getPatientsService(req.query));
+  const { data, meta } = await getPatientsService(req.query);
+  return sendSuccess(res, {
+    message: "Patients retrieved successfully",
+    data,
+    meta,
+  });
 }
 
 export async function getPatient(req, res) {
-  res.json({ data: await getPatientService(req.params.id) });
+  return sendSuccess(res, {
+    message: "Patient retrieved successfully",
+    data: await getPatientService(req.params.id),
+  });
 }
 
 export async function createPatient(req, res) {
-  res.status(201).json({ data: await createPatientService(req.body) });
+  return sendSuccess(res, {
+    statusCode: 201,
+    message: "Patient created successfully",
+    data: await createPatientService(req.body),
+  });
 }
 
 export async function updatePatient(req, res) {
-  res.json({ data: await updatePatientService(req.params.id, req.body) });
+  return sendSuccess(res, {
+    message: "Patient updated successfully",
+    data: await updatePatientService(req.params.id, req.body),
+  });
 }
 
 export async function completePatientVisit(req, res) {
-  res.json({ data: await completePatientVisitService(req.params.id, req.body || {}) });
+  return sendSuccess(res, {
+    message: "Patient visit completed successfully",
+    data: await completePatientVisitService(req.params.id, req.body || {}),
+  });
 }
 
 export async function deletePatient(req, res) {
   await deletePatientService(req.params.id);
-  res.status(204).send();
+  return sendSuccess(res, { message: "Patient deleted successfully" });
 }

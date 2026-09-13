@@ -3,12 +3,14 @@ import cors from "cors";
 import { env } from "./config/env.js";
 import { notFound } from "./middleware/not-found.js";
 import { errorHandler } from "./middleware/error-handler.js";
+import { requestTimeout } from "./middleware/request-timeout.js";
 import apiRouter from "./routes/api.route.js";
 import rootRouter from "./routes/root.route.js";
 
 const app = express();
 
 app.disable("x-powered-by");
+app.use(requestTimeout);
 app.use(cors({
   origin(origin, callback) {
     if (!origin || env.corsOrigins.includes("*") || env.corsOrigins.includes(origin)) {

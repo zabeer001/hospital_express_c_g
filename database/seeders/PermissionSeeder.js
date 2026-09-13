@@ -3,6 +3,7 @@ const permissions = [
   "doctors.index", "doctors.show", "doctors.create", "doctors.update", "doctors.delete",
   "patients.index", "patients.show", "patients.create", "patients.update", "patients.delete",
   "patients.complete-visit", "roles.manage", "users.manage",
+  "bookings.index", "bookings.show", "bookings.create", "bookings.update", "bookings.delete",
 ];
 
 class PermissionSeeder {
