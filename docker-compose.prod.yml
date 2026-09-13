@@ -36,6 +36,11 @@ services:
     container_name: prod_express_api
     restart: unless-stopped
     command: npm start
+    volumes:
+      # Application code is mounted from the checked-out VPS repository so
+      # normal source deployments only need a fast container recreation.
+      - ./src:/app/src:ro
+      - ./database:/app/database:ro
     environment:
       NODE_ENV: production
       PORT: 4000

@@ -58,6 +58,30 @@ Set this in the frontend environment when its API client is connected:
 NEXT_PUBLIC_API_URL=http://localhost:4000/api
 ```
 
+## CI/CD deployment
+
+Pushes to `main` run the tests and deploy the backend through GitHub Actions.
+For normal changes under `src` or `database`, the VPS pulls the new code and
+recreates only the API container using the existing image. PostgreSQL is not
+restarted or recreated, and its persistent data is not reseeded.
+
+The API image is rebuilt only on the first deployment or when `Dockerfile`,
+`package.json`, `package-lock.json`, `prisma.config.js`, or files under `prisma`
+change. Those files affect installed dependencies or the generated Prisma
+client and cannot safely reuse the old image.
+
+The VPS project directory must contain `.env.production`. Configure these
+GitHub Actions repository secrets once: `VPS_ROOT_ACCESS`, `VPS_PASSWORD`,
+`VPS_PROJECT_DIR`, and `VPS_APP_CONTAINER` (`prod_express_api`).
+
+Use the deployment helper from the project root:
+
+```bash
+./cicd/bash.sh setup # Run once to configure GitHub secrets from .env
+./cicd/bash.sh local "your commit message"
+./cicd/bash.sh production
+```
+
 All successful single-record responses use `{ "data": {...} }`. List responses use `{ "data": [...], "meta": {...} }`. Errors use `{ "error": { "message": "...", "details": {...} } }`. Validation uses Laravel-style rule strings through `node-input-validator`; each field in `details` contains an array of messages.
 
 ## API routes

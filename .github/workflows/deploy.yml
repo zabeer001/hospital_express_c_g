@@ -1,0 +1,134 @@
+name: CI/CD
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-backend
+  cancel-in-progress: false
+
+jobs:
+  test-and-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.14.0
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npm run prisma:generate
+
+      - name: Run tests
+        run: npm test
+
+      - name: Install SSH password client
+        run: sudo apt-get update && sudo apt-get install -y sshpass
+
+      - name: Deploy backend
+        env:
+          VPS_ROOT_ACCESS: ${{ secrets.VPS_ROOT_ACCESS }}
+          VPS_PASSWORD: ${{ secrets.VPS_PASSWORD }}
+          VPS_PROJECT_DIR: ${{ secrets.VPS_PROJECT_DIR }}
+          VPS_APP_CONTAINER: ${{ secrets.VPS_APP_CONTAINER }}
+        run: |
+          set -Eeuo pipefail
+
+          : "${VPS_ROOT_ACCESS:?Missing VPS_ROOT_ACCESS GitHub secret}"
+          : "${VPS_PASSWORD:?Missing VPS_PASSWORD GitHub secret}"
+          : "${VPS_PROJECT_DIR:?Missing VPS_PROJECT_DIR GitHub secret}"
+          : "${VPS_APP_CONTAINER:?Missing VPS_APP_CONTAINER GitHub secret}"
+
+          SSH_TARGET="${VPS_ROOT_ACCESS#ssh }"
+          export SSHPASS="$VPS_PASSWORD"
+
+          sshpass -e ssh \
+            -o StrictHostKeyChecking=accept-new \
+            "$SSH_TARGET" \
+            bash -se -- \
+            "$VPS_PROJECT_DIR" \
+            "$VPS_APP_CONTAINER" <<'REMOTE_SCRIPT'
+          set -Eeuo pipefail
+
+          PROJECT_DIR="$1"
+          APP_CONTAINER="$2"
+          COMPOSE=(docker compose --env-file .env.production -f docker-compose.prod.yml)
+
+          cd "$PROJECT_DIR"
+          test -f .env.production
+
+          OLD_SHA="$(git rev-parse HEAD)"
+          git fetch origin main
+          git checkout main
+          git pull --ff-only origin main
+          NEW_SHA="$(git rev-parse HEAD)"
+
+          "${COMPOSE[@]}" config --quiet
+
+          # Most deployments only mount the updated source and recreate the
+          # API container. Rebuild the image only when its runtime foundation
+          # (dependencies, generated Prisma client, or Dockerfile) changed, or
+          # when this is the first deployment and no API image exists yet.
+          NEEDS_BUILD=false
+          if [ -z "$("${COMPOSE[@]}" images -q api)" ]; then
+            NEEDS_BUILD=true
+          elif [ "$OLD_SHA" != "$NEW_SHA" ] && git diff --quiet "$OLD_SHA" "$NEW_SHA" -- \
+            Dockerfile package.json package-lock.json prisma.config.js prisma; then
+            NEEDS_BUILD=false
+          elif [ "$OLD_SHA" != "$NEW_SHA" ]; then
+            NEEDS_BUILD=true
+          fi
+
+          if [ "$NEEDS_BUILD" = true ]; then
+            echo "Runtime foundation changed; rebuilding the API image."
+            "${COMPOSE[@]}" build api
+          else
+            echo "Source-only change; reusing the existing API image."
+          fi
+
+          # Do not restart or recreate PostgreSQL during application deploys.
+          "${COMPOSE[@]}" up -d --no-build --force-recreate api
+
+          for attempt in $(seq 1 18); do
+            STATUS="$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' "$APP_CONTAINER")"
+
+            if [ "$STATUS" = healthy ]; then
+              break
+            fi
+
+            if [ "$STATUS" = unhealthy ] || [ "$STATUS" = exited ] || [ "$STATUS" = dead ]; then
+              docker logs --tail 100 "$APP_CONTAINER"
+              exit 1
+            fi
+
+            if [ "$attempt" -eq 18 ]; then
+              docker logs --tail 100 "$APP_CONTAINER"
+              echo "API container did not become healthy before the timeout" >&2
+              exit 1
+            fi
+
+            sleep 5
+          done
+
+          "${COMPOSE[@]}" exec -T api node -e \
+            "fetch('http://localhost:4000/api/health').then(r => { if (!r.ok) process.exit(1) }).catch(() => process.exit(1))"
+
+          docker ps \
+            --filter "name=^/${APP_CONTAINER}$" \
+            --format 'deployed: {{.Names}} ({{.Status}})'
+          REMOTE_SCRIPT

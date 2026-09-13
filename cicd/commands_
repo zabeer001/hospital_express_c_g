@@ -1,0 +1,10 @@
+LOCAL
+
+When backend files change:
+
+./cicd/bash.sh local "your commit message"
+
+
+PRODUCTION
+
+./cicd/bash.sh production
