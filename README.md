@@ -67,7 +67,7 @@ then the VPS reads its own `.env.production` (or `.env` fallback) for applicatio
 configuration.
 
 The VPS pulls the latest code and recreates only the API container. It uses the
-standard `node:22-alpine` runtime image instead of building a custom image.
+standard `node:22-bookworm-slim` runtime image instead of building a custom image.
 Dependencies and the generated Prisma client are stored in a Docker volume and
 refreshed only when `package-lock.json`, `prisma.config.js`, or Prisma schema
 files change. PostgreSQL is not recreated, restarted, or reseeded.
@@ -86,6 +86,15 @@ All successful single-record responses use `{ "data": {...} }`. List responses u
 | Method | Route | Purpose |
 | --- | --- | --- |
 | GET | `/api/health` | API and database health |
+| POST | `/api/auth/signin` | Sign in and receive access/refresh JWTs |
+| POST | `/api/auth/refresh` | Rotate a refresh token |
+| GET, POST | `/api/auth/profile`, `/api/auth/signout` | Current user/sign out |
+| PATCH | `/api/auth/profile/password` | Change password and revoke sessions |
+| GET, POST | `/api/roles` | List/create roles (requires `roles.manage`) |
+| PATCH, DELETE | `/api/roles/:id` | Update/delete a role |
+| GET | `/api/permissions` | Permission options |
+| GET, POST | `/api/users` | List/create users (requires `users.manage`) |
+| PATCH | `/api/users/:id/roles` | Replace a user's roles |
 | GET, POST | `/api/doctors` | List/create doctors |
 | GET, PATCH, DELETE | `/api/doctors/:id` | Doctor CRUD |
 | GET | `/api/doctors/:id/patients?upcoming=true` | Doctor schedule/patients |
@@ -97,6 +106,22 @@ All successful single-record responses use `{ "data": {...} }`. List responses u
 Doctor list filters: `search`, `specialization`, `hospital`, `createdFrom`, `createdTo`, `page`, `limit`.
 
 Patient list filters: `search`, `doctorId`, `condition`, `status`, `admittedFrom`, `admittedTo`, `upcoming`, `page`, `limit`.
+
+## Authentication and access control
+
+All doctor, patient, dashboard, role, and user endpoints require
+`Authorization: Bearer <accessToken>`. Roles inherit named permissions and the
+API middleware remains the final authorization safeguard. Access is global;
+there is no branch, outlet, or hospital-based tenancy.
+
+The RBAC seeder creates only the protected `software_engineer` role, grants it
+every permission, and creates or updates its account from the real
+`SOFTWARE_ENGINEER_*` environment values. This role cannot be edited,
+deleted, assigned, or removed through the API. The software engineer creates
+the `superadmin` role and all lower roles through the access-management API.
+Existing databases must apply `database/migrations/001_add_auth_rbac.sql`.
+After the tables exist, `npm run db:seed:rbac` safely seeds only access-control
+data; unlike the full database seeder, it does not replace doctors or patients.
 
 Example doctor creation:
 

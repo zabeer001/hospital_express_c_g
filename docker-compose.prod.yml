@@ -32,7 +32,7 @@ services:
       - SETUID
 
   api:
-    image: node:22-alpine
+    image: node:22-bookworm-slim
     container_name: prod_express_api
     restart: unless-stopped
     working_dir: /app
@@ -55,6 +55,12 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:-hospital_user}:${POSTGRES_PASSWORD:-hospital_password}@db:5432/${POSTGRES_DB:-hospital_management}
       DATABASE_SSL: "false"
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_ACCESS_TTL_SECONDS: ${JWT_ACCESS_TTL_SECONDS:-900}
+      JWT_REFRESH_TTL_SECONDS: ${JWT_REFRESH_TTL_SECONDS:-2592000}
+      SOFTWARE_ENGINEER_NAME: ${SOFTWARE_ENGINEER_NAME}
+      SOFTWARE_ENGINEER_EMAIL: ${SOFTWARE_ENGINEER_EMAIL}
+      SOFTWARE_ENGINEER_PASSWORD: ${SOFTWARE_ENGINEER_PASSWORD}
     ports:
       - "127.0.0.1:${PORT}:4000"
     depends_on:

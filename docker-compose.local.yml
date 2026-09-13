@@ -19,9 +19,11 @@ services:
       retries: 10
 
   api:
-    build: .
+    image: node:22-bookworm-slim
     container_name: hospital_express_api
     restart: unless-stopped
+    working_dir: /app
+    user: node
     command: npm run dev
     environment:
       NODE_ENV: development
@@ -30,11 +32,19 @@ services:
       DATABASE_SSL: "false"
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
       CHOKIDAR_USEPOLLING: "true"
+      SOFTWARE_ENGINEER_NAME: ${SOFTWARE_ENGINEER_NAME}
+      SOFTWARE_ENGINEER_EMAIL: ${SOFTWARE_ENGINEER_EMAIL}
+      SOFTWARE_ENGINEER_PASSWORD: ${SOFTWARE_ENGINEER_PASSWORD}
     ports:
       - "${PORT:-4000}:4000"
     volumes:
+      - ./package.json:/app/package.json
+      - ./package-lock.json:/app/package-lock.json
+      - ./prisma.config.js:/app/prisma.config.js:ro
       - ./src:/app/src:ro
       - ./prisma:/app/prisma:ro
+      - ./database:/app/database:ro
+      - api_node_modules:/app/node_modules
     depends_on:
       db:
         condition: service_healthy
@@ -65,3 +75,4 @@ networks:
 volumes:
   postgres_data:
   pgadmin_data:
+  api_node_modules:

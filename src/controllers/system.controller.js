@@ -12,6 +12,10 @@ function documentation(req, res) {
   res.json({
     endpoints: {
       health: "GET /api/health",
+      signIn: "POST /api/auth/signin",
+      refresh: "POST /api/auth/refresh",
+      profile: "GET /api/auth/profile",
+      signOut: "POST /api/auth/signout",
       doctors: "GET|POST /api/doctors",
       doctor: "GET|PATCH|DELETE /api/doctors/:id",
       doctorPatients: "GET /api/doctors/:id/patients?upcoming=true",

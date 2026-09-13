@@ -8,6 +8,7 @@
     "start": "node src/server.js",
     "test": "node --test",
     "db:seed": "node database/seeders/DatabaseSeeder.js",
+    "db:seed:rbac": "node database/seeders/RbacSeeder.js",
     "prisma:generate": "prisma generate",
     "prisma:push": "prisma db push",
     "prisma:studio": "prisma studio"

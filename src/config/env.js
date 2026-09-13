@@ -8,6 +8,11 @@ function booleanValue(value, fallback = false) {
   return String(value).toLowerCase() === "true";
 }
 
+function positiveInteger(value, fallback) {
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
+}
+
 const env = {
   nodeEnv: process.env.NODE_ENV || "development",
   port: Number(process.env.PORT || 4000),
@@ -19,6 +24,13 @@ const env = {
     .split(",")
     .map((origin) => origin.trim())
     .filter(Boolean),
+  jwtSecret: process.env.JWT_SECRET || "development-only-change-this-secret",
+  jwtAccessTtlSeconds: positiveInteger(process.env.JWT_ACCESS_TTL_SECONDS, 900),
+  jwtRefreshTtlSeconds: positiveInteger(process.env.JWT_REFRESH_TTL_SECONDS, 2592000),
 };
+
+if (env.nodeEnv === "production" && !process.env.JWT_SECRET) {
+  throw new Error("JWT_SECRET is required in production");
+}
 
 export { env };

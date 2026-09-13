@@ -7,15 +7,18 @@ import {
   getDoctors,
   updateDoctor,
 } from "../controllers/doctor/doctor.controller.js";
+import { authenticate } from "../middleware/authenticate.js";
+import { authorize } from "../middleware/authorize.js";
 
 const router = express.Router();
+router.use(authenticate);
 
-router.get("/", getDoctors);
-router.post("/", createDoctor);
+router.get("/", authorize("doctors.index"), getDoctors);
+router.post("/", authorize("doctors.create"), createDoctor);
 
-router.get("/:id/patients", getDoctorPatients);
-router.get("/:id", getDoctor);
-router.patch("/:id", updateDoctor);
-router.delete("/:id", deleteDoctor);
+router.get("/:id/patients", authorize("patients.index"), getDoctorPatients);
+router.get("/:id", authorize("doctors.show"), getDoctor);
+router.patch("/:id", authorize("doctors.update"), updateDoctor);
+router.delete("/:id", authorize("doctors.delete"), deleteDoctor);
 
 export default router;
