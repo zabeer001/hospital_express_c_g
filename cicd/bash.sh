@@ -214,6 +214,9 @@ fi
 COMPOSE=(docker compose --env-file "${VPS_ENV_FILE}" -f docker-compose.prod.yml)
 "${COMPOSE[@]}" config --quiet
 
+step "Starting PostgreSQL and waiting for it to become healthy"
+"${COMPOSE[@]}" up -d --wait db
+
 RUNTIME_HASH="$({
     sha256sum package-lock.json prisma.config.js
     find prisma -type f -print0 | sort -z | xargs -0 sha256sum
@@ -229,6 +232,14 @@ if ! "${COMPOSE[@]}" run --rm --no-deps \
 else
     step "Dependencies unchanged; skipping npm install"
 fi
+
+step "Applying database migrations"
+"${COMPOSE[@]}" exec -T db sh -c \
+    'psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB"' \
+    < database/migrations/001_add_auth_rbac.sql
+
+step "Seeding RBAC data"
+"${COMPOSE[@]}" run --rm api npm run db:seed:rbac
 
 step "Recreating only the API container"
 "${COMPOSE[@]}" up -d --no-deps --no-build --force-recreate api
