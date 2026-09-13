@@ -1,11 +1,3 @@
-FIRST-TIME SETUP
-
-Add VPS_ROOT_ACCESS, VPS_PASSWORD, VPS_PROJECT_DIR, and VPS_APP_CONTAINER to .env.
-Use VPS_APP_CONTAINER=prod_express_api.
-
-./cicd/bash.sh setup
-
-
 LOCAL
 
 When backend files change:

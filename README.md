@@ -60,24 +60,21 @@ NEXT_PUBLIC_API_URL=http://localhost:4000/api
 
 ## CI/CD deployment
 
-Pushes to `main` run the tests and deploy the backend through GitHub Actions.
-For normal changes under `src` or `database`, the VPS pulls the new code and
-recreates only the API container using the existing image. PostgreSQL is not
-restarted or recreated, and its persistent data is not reseeded.
+Pushes to `main` run the tests in GitHub Actions. Deployment runs directly
+from the local `production` helper, so GitHub deployment secrets are not used.
+The helper reads the existing VPS connection values from the local `.env`,
+then the VPS reads its own `.env.production` (or `.env` fallback) for application
+configuration.
 
-The API image is rebuilt only on the first deployment or when `Dockerfile`,
-`package.json`, `package-lock.json`, `prisma.config.js`, or files under `prisma`
-change. Those files affect installed dependencies or the generated Prisma
-client and cannot safely reuse the old image.
-
-The VPS project directory must contain `.env.production`. Configure these
-GitHub Actions repository secrets once: `VPS_ROOT_ACCESS`, `VPS_PASSWORD`,
-`VPS_PROJECT_DIR`, and `VPS_APP_CONTAINER` (`prod_express_api`).
+The VPS pulls the latest code and recreates only the API container. It uses the
+standard `node:22-alpine` runtime image instead of building a custom image.
+Dependencies and the generated Prisma client are stored in a Docker volume and
+refreshed only when `package-lock.json`, `prisma.config.js`, or Prisma schema
+files change. PostgreSQL is not recreated, restarted, or reseeded.
 
 Use the deployment helper from the project root:
 
 ```bash
-./cicd/bash.sh setup # Run once to configure GitHub secrets from .env
 ./cicd/bash.sh local "your commit message"
 ./cicd/bash.sh production
 ```

@@ -32,15 +32,23 @@ services:
       - SETUID
 
   api:
-    build: .
+    image: node:22-alpine
     container_name: prod_express_api
     restart: unless-stopped
+    working_dir: /app
+    user: node
     command: npm start
     volumes:
-      # Application code is mounted from the checked-out VPS repository so
-      # normal source deployments only need a fast container recreation.
+      # Production files come directly from the checked-out VPS repository.
+      # Dependencies live in a persistent volume and are refreshed by the
+      # deployment helper only when package or Prisma inputs change.
+      - ./package.json:/app/package.json:ro
+      - ./package-lock.json:/app/package-lock.json:ro
+      - ./prisma.config.js:/app/prisma.config.js:ro
+      - ./prisma:/app/prisma:ro
       - ./src:/app/src:ro
       - ./database:/app/database:ro
+      - api_node_modules:/app/node_modules
     environment:
       NODE_ENV: production
       PORT: 4000
@@ -103,4 +111,6 @@ volumes:
   postgres_data:
     driver: local
   pgadmin_data:
+    driver: local
+  api_node_modules:
     driver: local
