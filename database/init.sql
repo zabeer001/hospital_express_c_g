@@ -8,6 +8,11 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
+DO $$ BEGIN
+  CREATE TYPE "BookingStatus" AS ENUM ('Pending', 'Confirmed', 'Admitted', 'Completed', 'Cancelled');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
 CREATE TABLE IF NOT EXISTS "Doctor" (
   "id" SERIAL PRIMARY KEY,
   "name" TEXT NOT NULL,
@@ -21,24 +26,38 @@ CREATE TABLE IF NOT EXISTS "Doctor" (
 
 CREATE TABLE IF NOT EXISTS "Patient" (
   "id" SERIAL PRIMARY KEY,
-  "doctorId" INTEGER NOT NULL REFERENCES "Doctor"("id") ON DELETE RESTRICT ON UPDATE CASCADE,
   "name" TEXT NOT NULL,
   "age" INTEGER NOT NULL CHECK ("age" BETWEEN 0 AND 120),
   "gender" "PatientGender" NOT NULL,
   "phone" TEXT,
   "condition" TEXT,
   "status" "PatientStatus" NOT NULL DEFAULT 'Active',
-  "admittedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  "appointmentAt" TIMESTAMP(3),
-  "visitCompletedAt" TIMESTAMP(3),
   "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
   "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX IF NOT EXISTS "Patient_doctorId_idx" ON "Patient"("doctorId");
+CREATE TABLE IF NOT EXISTS "Booking" (
+  "id" SERIAL PRIMARY KEY,
+  "patientId" INTEGER NOT NULL REFERENCES "Patient"("id") ON DELETE RESTRICT ON UPDATE CASCADE,
+  "doctorId" INTEGER NOT NULL REFERENCES "Doctor"("id") ON DELETE RESTRICT ON UPDATE CASCADE,
+  "appointmentAt" TIMESTAMP(3) NOT NULL,
+  "admittedAt" TIMESTAMP(3),
+  "visitCompletedAt" TIMESTAMP(3),
+  "condition" TEXT,
+  "status" "BookingStatus" NOT NULL DEFAULT 'Pending',
+  "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS "Patient_name_idx" ON "Patient"("name");
+CREATE INDEX IF NOT EXISTS "Patient_phone_idx" ON "Patient"("phone");
+CREATE INDEX IF NOT EXISTS "Patient_gender_idx" ON "Patient"("gender");
 CREATE INDEX IF NOT EXISTS "Patient_status_idx" ON "Patient"("status");
-CREATE INDEX IF NOT EXISTS "Patient_admittedAt_idx" ON "Patient"("admittedAt");
-CREATE INDEX IF NOT EXISTS "Patient_appointmentAt_idx" ON "Patient"("appointmentAt");
+CREATE INDEX IF NOT EXISTS "Patient_createdAt_idx" ON "Patient"("createdAt");
+CREATE INDEX IF NOT EXISTS "Booking_patientId_idx" ON "Booking"("patientId");
+CREATE INDEX IF NOT EXISTS "Booking_doctorId_idx" ON "Booking"("doctorId");
+CREATE INDEX IF NOT EXISTS "Booking_appointmentAt_idx" ON "Booking"("appointmentAt");
+CREATE INDEX IF NOT EXISTS "Booking_status_idx" ON "Booking"("status");
 
 INSERT INTO "Doctor" ("id", "name", "specialization", "hospital", "phone", "email", "createdAt", "updatedAt") VALUES
   (1, 'Dr. Samira Hasan', 'Cardiology', 'Central Medical Centre', '+880 1711 204 810', 'samira.hasan@centralmed.com', '2026-09-08', '2026-09-08'),
@@ -47,17 +66,26 @@ INSERT INTO "Doctor" ("id", "name", "specialization", "hospital", "phone", "emai
   (4, 'Dr. Imran Chowdhury', 'Orthopedics', 'Green Life Hospital', '+880 1610 503 612', 'imran.c@greenlife.com', '2026-07-30', '2026-07-30')
 ON CONFLICT ("id") DO NOTHING;
 
-INSERT INTO "Patient" ("id", "doctorId", "name", "age", "gender", "phone", "condition", "status", "admittedAt", "appointmentAt", "updatedAt") VALUES
-  (1, 1, 'Amina Rahman', 46, 'Female', '+880 1712 440 101', 'Hypertension', 'Active', '2026-09-10', '2026-09-13 09:30', '2026-09-11'),
-  (2, 3, 'Rafi Islam', 8, 'Male', '+880 1811 502 712', 'Asthma', 'Monitoring', '2026-09-09', '2026-09-13 11:00', '2026-09-10'),
-  (3, 2, 'Jannat Sultana', 37, 'Female', '+880 1912 693 889', 'Migraine', 'Recovered', '2026-09-05', NULL, '2026-09-09'),
-  (4, 4, 'Rashed Kabir', 63, 'Male', '+880 1614 590 322', 'Arthritis', 'Monitoring', '2026-08-29', NULL, '2026-09-07'),
-  (5, 1, 'Omar Faruk', 51, 'Male', '+880 1915 332 908', 'Heart condition', 'Monitoring', '2026-08-17', '2026-09-14 10:45', '2026-09-05'),
-  (6, 3, 'Maliha Ahmed', 12, 'Female', '+880 1917 114 567', 'Allergy', 'Recovered', '2026-07-15', NULL, '2026-08-17')
+INSERT INTO "Patient" ("id", "name", "age", "gender", "phone", "condition", "status", "updatedAt") VALUES
+  (1, 'Amina Rahman', 46, 'Female', '+880 1712 440 101', 'Hypertension', 'Active', '2026-09-11'),
+  (2, 'Rafi Islam', 8, 'Male', '+880 1811 502 712', 'Asthma', 'Monitoring', '2026-09-10'),
+  (3, 'Jannat Sultana', 37, 'Female', '+880 1912 693 889', 'Migraine', 'Recovered', '2026-09-09'),
+  (4, 'Rashed Kabir', 63, 'Male', '+880 1614 590 322', 'Arthritis', 'Monitoring', '2026-09-07'),
+  (5, 'Omar Faruk', 51, 'Male', '+880 1915 332 908', 'Heart condition', 'Monitoring', '2026-09-05'),
+  (6, 'Maliha Ahmed', 12, 'Female', '+880 1917 114 567', 'Allergy', 'Recovered', '2026-08-17')
 ON CONFLICT ("id") DO NOTHING;
+
+INSERT INTO "Booking" ("patientId", "doctorId", "appointmentAt", "admittedAt", "visitCompletedAt", "condition", "status", "updatedAt") VALUES
+  (1, 1, '2026-09-13 09:30', '2026-09-10', NULL, 'Hypertension', 'Admitted', '2026-09-11'),
+  (2, 3, '2026-09-13 11:00', '2026-09-09', NULL, 'Asthma', 'Admitted', '2026-09-10'),
+  (3, 2, '2026-09-05', '2026-09-05', '2026-09-09', 'Migraine', 'Completed', '2026-09-09'),
+  (4, 4, '2026-08-29', '2026-08-29', NULL, 'Arthritis', 'Admitted', '2026-09-07'),
+  (5, 1, '2026-09-14 10:45', '2026-08-17', NULL, 'Heart condition', 'Admitted', '2026-09-05'),
+  (6, 3, '2026-07-15', '2026-07-15', '2026-08-17', 'Allergy', 'Completed', '2026-08-17');
 
 SELECT setval(pg_get_serial_sequence('"Doctor"', 'id'), COALESCE((SELECT MAX("id") FROM "Doctor"), 1));
 SELECT setval(pg_get_serial_sequence('"Patient"', 'id'), COALESCE((SELECT MAX("id") FROM "Patient"), 1));
+SELECT setval(pg_get_serial_sequence('"Booking"', 'id'), COALESCE((SELECT MAX("id") FROM "Booking"), 1));
 
 CREATE TABLE IF NOT EXISTS "User" (
   "id" SERIAL PRIMARY KEY,

@@ -1,5 +1,6 @@
 import { prisma } from "../../../config/database.js";
 import { toPatientResponse } from "../../../utils/response-mappers.js";
+import { patientBookingInclude } from "../../patient/services/utils/patientBookingData.util.js";
 
 function monthKey(date) {
   return date.toISOString().slice(0, 7);
@@ -27,13 +28,13 @@ export async function getDashboardSummaryService() {
     statuses,
     conditions,
     admissions,
-    doctorGroups,
+    doctorPatients,
     recentPatients,
   ] = await Promise.all([
     prisma.doctor.count(),
     prisma.patient.count(),
     prisma.patient.count({ where: { status: "Active" } }),
-    prisma.patient.count({ where: { admittedAt: { gte: months.at(-1) } } }),
+    prisma.booking.count({ where: { admittedAt: { gte: months.at(-1) } } }),
     prisma.patient.groupBy({ by: ["status"], _count: { _all: true }, orderBy: { status: "asc" } }),
     prisma.patient.groupBy({
       by: ["condition"],
@@ -41,25 +42,31 @@ export async function getDashboardSummaryService() {
       orderBy: [{ _count: { condition: "desc" } }, { condition: "asc" }],
       take: 10,
     }),
-    prisma.patient.findMany({
+    prisma.booking.findMany({
       where: { admittedAt: { gte: months[0] } },
       select: { admittedAt: true },
     }),
-    prisma.patient.groupBy({
-      by: ["doctorId"],
-      _count: { _all: true },
-      orderBy: { _count: { doctorId: "desc" } },
-      take: 5,
+    prisma.booking.findMany({
+      distinct: ["doctorId", "patientId"],
+      select: { doctorId: true, patientId: true },
     }),
     prisma.patient.findMany({
-      include: { doctor: { select: { name: true } } },
+      include: patientBookingInclude,
       orderBy: { updatedAt: "desc" },
       take: 5,
     }),
   ]);
 
+  const busiestDoctorGroups = [...doctorPatients.reduce((counts, row) => {
+    counts.set(row.doctorId, (counts.get(row.doctorId) || 0) + 1);
+    return counts;
+  }, new Map()).entries()]
+    .map(([doctorId, patientCount]) => ({ doctorId, patientCount }))
+    .sort((left, right) => right.patientCount - left.patientCount)
+    .slice(0, 5);
+
   const doctors = await prisma.doctor.findMany({
-    where: { id: { in: doctorGroups.map((row) => row.doctorId) } },
+    where: { id: { in: busiestDoctorGroups.map((row) => row.doctorId) } },
     select: { id: true, name: true, specialization: true },
   });
   const doctorsById = new Map(doctors.map((doctor) => [doctor.id, doctor]));
@@ -77,9 +84,9 @@ export async function getDashboardSummaryService() {
       month: monthKey(month),
       count: monthlyCounts.get(monthKey(month)) || 0,
     })),
-    busiestDoctors: doctorGroups.map((row) => ({
+    busiestDoctors: busiestDoctorGroups.map((row) => ({
       ...doctorsById.get(row.doctorId),
-      patientCount: row._count._all,
+      patientCount: row.patientCount,
     })),
     recentPatients: recentPatients.map(toPatientResponse),
   };

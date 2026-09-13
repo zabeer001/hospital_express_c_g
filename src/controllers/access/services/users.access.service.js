@@ -1,4 +1,5 @@
 import { prisma } from "../../../config/database.js";
+import { sync } from "../../../database/custom-functions/sync.js";
 import { ApiError } from "../../../utils/api-error.js";
 import { authUserInclude, toAuthUser } from "../../../utils/auth-response.js";
 import { hashPassword } from "../../../utils/password.js";
@@ -44,8 +45,14 @@ export async function setUserRolesService(userIdValue, roleIdsValue) {
   if (count !== roleIds.length) throw new ApiError(422, "One or more roles do not exist");
   await prisma.$transaction(async (tx) => {
     await tx.user.findUniqueOrThrow({ where: { id: userId } });
-    await tx.userRole.deleteMany({ where: { userId } });
-    if (roleIds.length) await tx.userRole.createMany({ data: roleIds.map((roleId) => ({ userId, roleId })) });
+    await sync({
+      tx,
+      model: "userRole",
+      ownerField: "userId",
+      ownerId: userId,
+      relatedField: "roleId",
+      relatedIds: roleIds,
+    });
   });
   const user = await prisma.user.findUniqueOrThrow({ where: { id: userId }, include: authUserInclude });
   return toAuthUser(user);

@@ -18,7 +18,10 @@ async function validateDoctor(body, { partial = false } = {}) {
   await validateInput(body, rules);
 
   const result = {};
-  for (const field of [...Object.keys(requiredDefinitions), ...Object.keys(optionalDefinitions)]) {
+  for (const field of [
+    ...Object.keys(requiredDefinitions),
+    ...Object.keys(optionalDefinitions),
+  ]) {
     if (body[field] === undefined) continue;
     result[field] = body[field] === null ? null : String(body[field]).trim();
   }

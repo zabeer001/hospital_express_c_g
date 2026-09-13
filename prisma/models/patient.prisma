@@ -1,22 +1,19 @@
 model Patient {
-  id               Int           @id @default(autoincrement())
-  doctorId         Int
-  name             String
-  age              Int
-  gender           PatientGender
-  phone            String?
-  condition        String?
-  status           PatientStatus @default(Active)
-  admittedAt       DateTime      @default(now())
-  appointmentAt    DateTime?
-  visitCompletedAt DateTime?
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @updatedAt
+  id        Int           @id @default(autoincrement())
+  name      String
+  age       Int
+  gender    PatientGender
+  phone     String?
+  condition String?
+  status    PatientStatus @default(Active)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
 
-  doctor Doctor @relation(fields: [doctorId], references: [id], onDelete: Restrict)
+  bookings Booking[]
 
-  @@index([doctorId])
+  @@index([name])
+  @@index([phone])
+  @@index([gender])
   @@index([status])
-  @@index([admittedAt])
-  @@index([appointmentAt])
+  @@index([createdAt])
 }

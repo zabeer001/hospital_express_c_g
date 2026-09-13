@@ -1,3 +1,5 @@
+import { sync } from "../../src/database/custom-functions/sync.js";
+
 const rolePermissions = {
   software_engineer: "*",
 };
@@ -14,11 +16,14 @@ class RoleSeeder {
         create: { name, description: name === "software_engineer" ? "Protected platform owner with unrestricted access" : null },
       });
       const names = granted === "*" ? [...permissionByName.keys()] : granted;
-      await prisma.rolePermission.deleteMany({ where: { roleId: role.id } });
-      await prisma.rolePermission.createMany({ data: names.map((permissionName) => ({
-        roleId: role.id,
-        permissionId: permissionByName.get(permissionName),
-      })) });
+      await sync({
+        tx: prisma,
+        model: "rolePermission",
+        ownerField: "roleId",
+        ownerId: role.id,
+        relatedField: "permissionId",
+        relatedIds: names.map((permissionName) => permissionByName.get(permissionName)),
+      });
       roles[name] = role;
     }
 

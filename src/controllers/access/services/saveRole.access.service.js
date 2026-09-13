@@ -1,4 +1,5 @@
 import { prisma } from "../../../config/database.js";
+import { sync } from "../../../database/custom-functions/sync.js";
 import { ApiError } from "../../../utils/api-error.js";
 
 function validateRoleBody(body) {
@@ -26,8 +27,14 @@ export async function saveRoleService(id, body) {
     const role = roleId
       ? await tx.role.update({ where: { id: roleId }, data: { name: data.name, description: data.description } })
       : await tx.role.create({ data: { name: data.name, description: data.description } });
-    await tx.rolePermission.deleteMany({ where: { roleId: role.id } });
-    if (data.permissionIds.length) await tx.rolePermission.createMany({ data: data.permissionIds.map((permissionId) => ({ roleId: role.id, permissionId })) });
+    await sync({
+      tx,
+      model: "rolePermission",
+      ownerField: "roleId",
+      ownerId: role.id,
+      relatedField: "permissionId",
+      relatedIds: data.permissionIds,
+    });
     return role;
   });
 }

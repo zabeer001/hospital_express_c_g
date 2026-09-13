@@ -7,18 +7,25 @@ export async function getDoctorService(id) {
   const doctorId = await validateId(id);
   const doctor = await prisma.doctor.findUnique({
     where: { id: doctorId },
-    include: { _count: { select: { patients: true } } },
   });
 
   if (!doctor) throw new ApiError(404, "Doctor not found");
 
-  const upcomingCount = await prisma.patient.count({
-    where: {
-      doctorId,
-      appointmentAt: { gte: new Date() },
-      visitCompletedAt: null,
-    },
-  });
+  const [upcomingCount, patients] = await Promise.all([
+    prisma.booking.count({
+      where: {
+        doctorId,
+        appointmentAt: { gte: new Date() },
+        visitCompletedAt: null,
+        status: { not: "Cancelled" },
+      },
+    }),
+    prisma.booking.findMany({
+      where: { doctorId },
+      distinct: ["patientId"],
+      select: { patientId: true },
+    }),
+  ]);
 
-  return toDoctorResponse(doctor, upcomingCount);
+  return toDoctorResponse(doctor, upcomingCount, patients.length);
 }

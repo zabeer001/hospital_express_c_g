@@ -1,4 +1,5 @@
 import { hashPassword } from "../../src/utils/password.js";
+import { sync } from "../../src/database/custom-functions/sync.js";
 
 const accountDefinitions = [
   { role: "software_engineer", nameKey: "SOFTWARE_ENGINEER_NAME", emailKey: "SOFTWARE_ENGINEER_EMAIL", passwordKey: "SOFTWARE_ENGINEER_PASSWORD" },
@@ -23,8 +24,14 @@ class UserSeeder {
       // Exactly one account may own the protected role: the account configured
       // by the real environment used for this seeder run.
       await prisma.userRole.deleteMany({ where: { roleId: roles[definition.role].id, userId: { not: user.id } } });
-      await prisma.userRole.deleteMany({ where: { userId: user.id } });
-      await prisma.userRole.create({ data: { userId: user.id, roleId: roles[definition.role].id } });
+      await sync({
+        tx: prisma,
+        model: "userRole",
+        ownerField: "userId",
+        ownerId: user.id,
+        relatedField: "roleId",
+        relatedIds: [roles[definition.role].id],
+      });
     }
   }
 }

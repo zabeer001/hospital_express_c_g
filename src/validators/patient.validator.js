@@ -4,6 +4,7 @@ const genders = ["Female", "Male", "Other"];
 const statuses = ["Active", "Monitoring", "Recovered"];
 const requiredDefinitions = {
   doctorId: "integer|between:1,2147483647",
+  appointmentAt: "dateiso",
   name: "string|maxLength:150",
   age: "integer|between:0,120",
   gender: `in:${genders.join(",")}`,
@@ -12,8 +13,7 @@ const optionalDefinitions = {
   phone: "nullable|string|maxLength:40",
   condition: "nullable|string|maxLength:180",
   status: `in:${statuses.join(",")}`,
-  admittedAt: "dateFormat:YYYY-MM-DD",
-  appointmentAt: "nullable|dateiso",
+  admittedAt: "nullable|dateFormat:YYYY-MM-DD",
   visitCompletedAt: "nullable|dateiso",
 };
 

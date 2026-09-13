@@ -28,7 +28,6 @@ export async function getDoctorsService(query) {
   const [doctors, total] = await Promise.all([
     prisma.doctor.findMany({
       where,
-      include: { _count: { select: { patients: true } } },
       orderBy: { createdAt: "desc" },
       skip: paging.offset,
       take: paging.limit,
@@ -36,19 +35,36 @@ export async function getDoctorsService(query) {
     prisma.doctor.count({ where }),
   ]);
 
-  const upcoming = await prisma.patient.groupBy({
-    by: ["doctorId"],
-    where: {
-      doctorId: { in: doctors.map((doctor) => doctor.id) },
-      appointmentAt: { gte: new Date() },
-      visitCompletedAt: null,
-    },
-    _count: { _all: true },
-  });
+  const doctorIds = doctors.map((doctor) => doctor.id);
+  const [upcoming, doctorPatients] = await Promise.all([
+    prisma.booking.groupBy({
+      by: ["doctorId"],
+      where: {
+        doctorId: { in: doctorIds },
+        appointmentAt: { gte: new Date() },
+        visitCompletedAt: null,
+        status: { not: "Cancelled" },
+      },
+      _count: { _all: true },
+    }),
+    prisma.booking.findMany({
+      where: { doctorId: { in: doctorIds } },
+      distinct: ["doctorId", "patientId"],
+      select: { doctorId: true, patientId: true },
+    }),
+  ]);
   const upcomingByDoctor = new Map(upcoming.map((row) => [row.doctorId, row._count._all]));
+  const patientsByDoctor = doctorPatients.reduce((counts, row) => {
+    counts.set(row.doctorId, (counts.get(row.doctorId) || 0) + 1);
+    return counts;
+  }, new Map());
 
   return {
-    data: doctors.map((doctor) => toDoctorResponse(doctor, upcomingByDoctor.get(doctor.id) || 0)),
+    data: doctors.map((doctor) => toDoctorResponse(
+      doctor,
+      upcomingByDoctor.get(doctor.id) || 0,
+      patientsByDoctor.get(doctor.id) || 0,
+    )),
     meta: getPaginationMeta(paging.page, paging.limit, total),
   };
 }

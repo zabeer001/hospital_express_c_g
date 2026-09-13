@@ -8,17 +8,26 @@ export async function getDoctorPatientsService(id, query) {
   const doctorId = await validateId(id);
   await getDoctorService(doctorId);
   const paging = getPagination(query);
-  const where = { doctorId };
+  const bookingWhere = { doctorId };
 
   if (query.upcoming === "true") {
-    where.appointmentAt = { gte: new Date() };
-    where.visitCompletedAt = null;
+    bookingWhere.appointmentAt = { gte: new Date() };
+    bookingWhere.visitCompletedAt = null;
+    bookingWhere.status = { not: "Cancelled" };
   }
+  const where = { bookings: { some: bookingWhere } };
 
   const [patients, total] = await Promise.all([
     prisma.patient.findMany({
       where,
-      include: { doctor: { select: { name: true, specialization: true } } },
+      include: {
+        bookings: {
+          where: bookingWhere,
+          include: { doctor: { select: { name: true, specialization: true } } },
+          orderBy: { appointmentAt: "desc" },
+          take: 1,
+        },
+      },
       orderBy: { updatedAt: "desc" },
       skip: paging.offset,
       take: paging.limit,
