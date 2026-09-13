@@ -233,10 +233,52 @@ else
     step "Dependencies unchanged; skipping npm install"
 fi
 
-step "Applying database migrations"
+step "Preparing database migration ledger"
 "${COMPOSE[@]}" exec -T db sh -c \
-    'psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB"' \
-    < database/migrations/001_add_auth_rbac.sql
+    'psql -X -q -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB"' <<'SQL'
+CREATE TABLE IF NOT EXISTS "_SchemaMigration" (
+  "name" TEXT PRIMARY KEY,
+  "checksum" TEXT NOT NULL,
+  "appliedAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+SQL
+
+shopt -s nullglob
+MIGRATION_FILES=(database/migrations/*.sql)
+shopt -u nullglob
+
+for MIGRATION_FILE in "${MIGRATION_FILES[@]}"; do
+    MIGRATION_NAME="$(basename "${MIGRATION_FILE}")"
+    MIGRATION_CHECKSUM="$(sha256sum "${MIGRATION_FILE}" | cut -d' ' -f1)"
+
+    if [[ ! "${MIGRATION_NAME}" =~ ^[A-Za-z0-9._-]+$ ]]; then
+        echo "Unsafe migration filename: ${MIGRATION_NAME}" >&2
+        exit 1
+    fi
+
+    APPLIED_CHECKSUM="$(
+        printf 'SELECT "checksum" FROM "_SchemaMigration" WHERE "name" = '\''%s'\'';\n' "${MIGRATION_NAME}" |
+            "${COMPOSE[@]}" exec -T db sh -c \
+                'psql -X -qAt -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB"'
+    )"
+
+    if [[ -n "${APPLIED_CHECKSUM}" ]]; then
+        if [[ "${APPLIED_CHECKSUM}" != "${MIGRATION_CHECKSUM}" ]]; then
+            echo "Applied migration ${MIGRATION_NAME} has changed; refusing to continue." >&2
+            exit 1
+        fi
+        echo "Migration already applied: ${MIGRATION_NAME}"
+        continue
+    fi
+
+    step "Applying migration ${MIGRATION_NAME}"
+    {
+        cat "${MIGRATION_FILE}"
+        printf '\nINSERT INTO "_SchemaMigration" ("name", "checksum") VALUES ('\''%s'\'', '\''%s'\'');\n' \
+            "${MIGRATION_NAME}" "${MIGRATION_CHECKSUM}"
+    } | "${COMPOSE[@]}" exec -T db sh -c \
+        'psql -X -v ON_ERROR_STOP=1 --single-transaction -U "$POSTGRES_USER" -d "$POSTGRES_DB"'
+done
 
 step "Seeding RBAC data"
 "${COMPOSE[@]}" run --rm api npm run db:seed:rbac
