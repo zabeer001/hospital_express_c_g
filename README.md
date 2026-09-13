@@ -114,11 +114,14 @@ All doctor, patient, dashboard, role, and user endpoints require
 API middleware remains the final authorization safeguard. Access is global;
 there is no branch, outlet, or hospital-based tenancy.
 
-The RBAC seeder creates only the protected `software_engineer` role, grants it
-every permission, and creates or updates its account from the real
-`SOFTWARE_ENGINEER_*` environment values. This role cannot be edited,
-deleted, assigned, or removed through the API. The software engineer creates
-the `superadmin` role and all lower roles through the access-management API.
+The RBAC seeder creates only the protected `software_engineer` role and grants
+it every permission. If all three `SOFTWARE_ENGINEER_NAME`,
+`SOFTWARE_ENGINEER_EMAIL`, and `SOFTWARE_ENGINEER_PASSWORD` values are
+provided, it also creates or updates the protected account. Account bootstrap
+is optional, but partial configuration is rejected. This role cannot be
+edited, deleted, assigned, or removed through the API. The software engineer
+creates the `superadmin` role and all lower roles through the
+access-management API.
 Existing databases must apply `database/migrations/001_add_auth_rbac.sql`.
 After the tables exist, `npm run db:seed:rbac` safely seeds only access-control
 data; unlike the full database seeder, it does not replace doctors or patients.

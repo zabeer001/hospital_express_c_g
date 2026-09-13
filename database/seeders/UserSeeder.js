@@ -11,8 +11,13 @@ class UserSeeder {
       const email = String(process.env[definition.emailKey] || "").trim().toLowerCase();
       const name = String(process.env[definition.nameKey] || "").trim();
       const password = String(process.env[definition.passwordKey] || "");
+
+      if (!name && !email && !password) {
+        continue;
+      }
+
       if (!name || !email || password.length < 8) {
-        throw new Error(`${definition.nameKey}, ${definition.emailKey}, and ${definition.passwordKey} (minimum 8 characters) are required in .env`);
+        throw new Error(`${definition.nameKey}, ${definition.emailKey}, and ${definition.passwordKey} (minimum 8 characters) must all be provided when bootstrapping the protected account`);
       }
       const passwordHash = await hashPassword(password);
       const user = await prisma.user.upsert({

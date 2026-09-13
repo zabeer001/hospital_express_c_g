@@ -21,7 +21,7 @@ class RbacSeeder {
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
   new RbacSeeder()
     .run()
-    .then(() => console.log("RBAC permissions and the protected software engineer account were seeded."))
+    .then(() => console.log("RBAC permissions and roles were seeded; the protected account was synchronized when configured."))
     .catch((error) => {
       console.error("RBAC seeding failed:", error);
       process.exitCode = 1;
