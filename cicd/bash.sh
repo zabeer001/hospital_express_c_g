@@ -225,7 +225,7 @@ if ! "${COMPOSE[@]}" run --rm --no-deps \
     step "Installing dependencies and generating the Prisma client"
     "${COMPOSE[@]}" run --rm --no-deps --user root \
         -e EXPECTED_RUNTIME_HASH="${RUNTIME_HASH}" \
-        api sh -c 'npm ci --include=dev && npx prisma generate && npm prune --omit=dev && printf "%s" "$EXPECTED_RUNTIME_HASH" > node_modules/.runtime-hash'
+        api sh -c 'npm ci --include=dev && npx prisma generate && npm prune --omit=dev --package-lock=false && printf "%s" "$EXPECTED_RUNTIME_HASH" > node_modules/.runtime-hash'
 else
     step "Dependencies unchanged; skipping npm install"
 fi
