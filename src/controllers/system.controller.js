@@ -2,7 +2,7 @@ import { prisma } from "../config/database.js";
 
 function info(req, res) {
   res.json({
-    name: "Hospital Management API",
+    name: "Hospital tracker API",
     version: "1.0.0",
     documentation: "/api",
   });
