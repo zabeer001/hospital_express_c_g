@@ -1,6 +1,9 @@
 import { hashPassword } from "../../src/utils/password.js";
 import { sync } from "../../src/database/custom-functions/sync.js";
 
+// engineer@hospital.local
+// SOFTWARE_ENGINEER_PASSWORD="Engineer123!"
+
 const accountDefinitions = [
   { role: "software_engineer", nameKey: "SOFTWARE_ENGINEER_NAME", emailKey: "SOFTWARE_ENGINEER_EMAIL", passwordKey: "SOFTWARE_ENGINEER_PASSWORD" },
 ];

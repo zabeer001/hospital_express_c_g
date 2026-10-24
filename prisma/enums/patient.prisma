@@ -3,9 +3,3 @@ enum PatientGender {
   Male
   Other
 }
-
-enum PatientStatus {
-  Active
-  Monitoring
-  Recovered
-}

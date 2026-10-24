@@ -1,12 +1,15 @@
 import { faker } from "@faker-js/faker";
 
-function bookingFactory(patientId, doctorId, patient) {
+const conditions = ["Allergy", "Arthritis", "Asthma", "Diabetes", "Heart condition", "Hypertension", "Migraine"];
+
+function bookingFactory(patientId, doctorId) {
   const admittedAt = faker.date.recent({ days: 120 });
-  const hasUpcomingAppointment = patient.status !== "Recovered" && faker.datatype.boolean();
+  const completed = faker.datatype.boolean();
+  const hasUpcomingAppointment = !completed && faker.datatype.boolean();
   const appointmentAt = hasUpcomingAppointment
     ? faker.date.soon({ days: 30 })
     : admittedAt;
-  const visitCompletedAt = patient.status === "Recovered"
+  const visitCompletedAt = completed
     ? faker.date.between({ from: admittedAt, to: new Date() })
     : null;
 
@@ -16,7 +19,7 @@ function bookingFactory(patientId, doctorId, patient) {
     appointmentAt,
     admittedAt,
     visitCompletedAt,
-    condition: patient.condition,
+    condition: faker.helpers.arrayElement(conditions),
     status: visitCompletedAt ? "Completed" : "Admitted",
   };
 }

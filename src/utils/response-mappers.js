@@ -17,8 +17,15 @@ function toPatientResponse(record) {
   const admittedAt = booking ? booking.admittedAt : patient.admittedAt;
   const appointmentAt = booking ? booking.appointmentAt : patient.appointmentAt;
   const visitCompletedAt = booking ? booking.visitCompletedAt : patient.visitCompletedAt;
+  const status = booking?.status === "Completed"
+    ? "Recovered"
+    : booking?.status === "Admitted"
+      ? "Monitoring"
+      : "Active";
   return {
     ...patient,
+    condition: booking?.condition || "",
+    status,
     ...(booking && {
       bookingId: booking.id,
       bookingStatus: booking.status,

@@ -12,15 +12,24 @@ export async function getPatientsService(query) {
 
   if (search) {
     where.OR = [
-      ...["name", "phone", "condition"].map((field) => ({
+      ...["name", "phone", "email"].map((field) => ({
         [field]: { contains: search, mode: "insensitive" },
       })),
-      { bookings: { some: { doctor: { name: { contains: search, mode: "insensitive" } } } } },
+      { bookings: { some: { OR: [
+        { condition: { contains: search, mode: "insensitive" } },
+        { doctor: { name: { contains: search, mode: "insensitive" } } },
+      ] } } },
     ];
   }
   if (query.doctorId !== undefined) bookingWhere.doctorId = await validateId(query.doctorId, "doctorId");
-  if (query.condition?.trim()) where.condition = query.condition.trim();
-  if (query.status) where.status = query.status;
+  if (query.condition?.trim()) bookingWhere.condition = query.condition.trim();
+  if (query.status) {
+    bookingWhere.status = {
+      Active: "Confirmed",
+      Monitoring: "Admitted",
+      Recovered: "Completed",
+    }[query.status] || query.status;
+  }
   if (query.admittedFrom || query.admittedTo) {
     bookingWhere.admittedAt = {};
     if (query.admittedFrom) bookingWhere.admittedAt.gte = new Date(`${query.admittedFrom}T00:00:00.000Z`);

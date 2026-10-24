@@ -26,7 +26,7 @@ Optional query parameters:
 | `page` | Integer at least 1; default 1 |
 | `limit` | Integer 1–100; default 100 |
 
-## Create patient and booking
+## Create patient
 
 ```http
 POST {{baseUrl}}/api/patients
@@ -34,6 +34,21 @@ Content-Type: application/json
 ```
 
 Permission: `patients.create`.
+
+The minimum payload creates a patient without a booking:
+
+```json
+{
+  "name": "Postman Patient",
+  "age": 35,
+  "gender": "Female",
+  "phone": "+8801700000001",
+  "email": "patient@example.com"
+}
+```
+
+To create the patient's first booking at the same time, also send an existing
+`doctorId` and an ISO `appointmentAt`:
 
 ```json
 {
@@ -50,11 +65,15 @@ Permission: `patients.create`.
 }
 ```
 
-Required: existing positive `doctorId`, ISO `appointmentAt`, `name`, age 0–120,
-and gender `Female`, `Male`, or `Other`.
+Required: `name`, age 0–120, and gender `Female`, `Male`, or `Other`.
 
-Optional: nullable `phone`, `condition`, `admittedAt`, `visitCompletedAt`, and
-status `Active`, `Monitoring`, or `Recovered`. Expected: `201`.
+`doctorId` and `appointmentAt` are optional as a pair. If either is supplied,
+both are required, and `doctorId` must reference an existing doctor.
+
+Optional patient fields: nullable `phone` and `email`.
+
+`condition`, status, doctor assignment, admission, appointment, and completion
+fields are stored on the booking, not on the patient. Expected: `201`.
 
 ```javascript
 pm.test("Patient created", () => pm.response.to.have.status(201));
@@ -128,4 +147,3 @@ DELETE {{baseUrl}}/api/patients/{{patientId}}
 Permission: `patients.delete`. Expected: `204` only when no booking references
 the patient. Existing booking history causes `409` because the foreign key is
 restrictive.
-

@@ -6,7 +6,7 @@ class BookingSeeder {
     for (const patient of patients) {
       const doctor = faker.helpers.arrayElement(doctors);
       await prisma.booking.create({
-        data: bookingFactory(patient.id, doctor.id, patient),
+        data: bookingFactory(patient.id, doctor.id),
       });
     }
   }

@@ -4,11 +4,6 @@ EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ BEGIN
-  CREATE TYPE "PatientStatus" AS ENUM ('Active', 'Monitoring', 'Recovered');
-EXCEPTION WHEN duplicate_object THEN NULL;
-END $$;
-
-DO $$ BEGIN
   CREATE TYPE "BookingStatus" AS ENUM ('Pending', 'Confirmed', 'Admitted', 'Completed', 'Cancelled');
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
@@ -30,8 +25,7 @@ CREATE TABLE IF NOT EXISTS "Patient" (
   "age" INTEGER NOT NULL CHECK ("age" BETWEEN 0 AND 120),
   "gender" "PatientGender" NOT NULL,
   "phone" TEXT,
-  "condition" TEXT,
-  "status" "PatientStatus" NOT NULL DEFAULT 'Active',
+  "email" TEXT,
   "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
   "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -51,8 +45,8 @@ CREATE TABLE IF NOT EXISTS "Booking" (
 
 CREATE INDEX IF NOT EXISTS "Patient_name_idx" ON "Patient"("name");
 CREATE INDEX IF NOT EXISTS "Patient_phone_idx" ON "Patient"("phone");
+CREATE INDEX IF NOT EXISTS "Patient_email_idx" ON "Patient"("email");
 CREATE INDEX IF NOT EXISTS "Patient_gender_idx" ON "Patient"("gender");
-CREATE INDEX IF NOT EXISTS "Patient_status_idx" ON "Patient"("status");
 CREATE INDEX IF NOT EXISTS "Patient_createdAt_idx" ON "Patient"("createdAt");
 CREATE INDEX IF NOT EXISTS "Booking_patientId_idx" ON "Booking"("patientId");
 CREATE INDEX IF NOT EXISTS "Booking_doctorId_idx" ON "Booking"("doctorId");
@@ -66,13 +60,13 @@ INSERT INTO "Doctor" ("id", "name", "specialization", "hospital", "phone", "emai
   (4, 'Dr. Imran Chowdhury', 'Orthopedics', 'Green Life Hospital', '+880 1610 503 612', 'imran.c@greenlife.com', '2026-07-30', '2026-07-30')
 ON CONFLICT ("id") DO NOTHING;
 
-INSERT INTO "Patient" ("id", "name", "age", "gender", "phone", "condition", "status", "updatedAt") VALUES
-  (1, 'Amina Rahman', 46, 'Female', '+880 1712 440 101', 'Hypertension', 'Active', '2026-09-11'),
-  (2, 'Rafi Islam', 8, 'Male', '+880 1811 502 712', 'Asthma', 'Monitoring', '2026-09-10'),
-  (3, 'Jannat Sultana', 37, 'Female', '+880 1912 693 889', 'Migraine', 'Recovered', '2026-09-09'),
-  (4, 'Rashed Kabir', 63, 'Male', '+880 1614 590 322', 'Arthritis', 'Monitoring', '2026-09-07'),
-  (5, 'Omar Faruk', 51, 'Male', '+880 1915 332 908', 'Heart condition', 'Monitoring', '2026-09-05'),
-  (6, 'Maliha Ahmed', 12, 'Female', '+880 1917 114 567', 'Allergy', 'Recovered', '2026-08-17')
+INSERT INTO "Patient" ("id", "name", "age", "gender", "phone", "email", "updatedAt") VALUES
+  (1, 'Amina Rahman', 46, 'Female', '+880 1712 440 101', 'amina.rahman@example.com', '2026-09-11'),
+  (2, 'Rafi Islam', 8, 'Male', '+880 1811 502 712', 'rafi.islam@example.com', '2026-09-10'),
+  (3, 'Jannat Sultana', 37, 'Female', '+880 1912 693 889', 'jannat.sultana@example.com', '2026-09-09'),
+  (4, 'Rashed Kabir', 63, 'Male', '+880 1614 590 322', 'rashed.kabir@example.com', '2026-09-07'),
+  (5, 'Omar Faruk', 51, 'Male', '+880 1915 332 908', 'omar.faruk@example.com', '2026-09-05'),
+  (6, 'Maliha Ahmed', 12, 'Female', '+880 1917 114 567', 'maliha.ahmed@example.com', '2026-08-17')
 ON CONFLICT ("id") DO NOTHING;
 
 INSERT INTO "Booking" ("patientId", "doctorId", "appointmentAt", "admittedAt", "visitCompletedAt", "condition", "status", "updatedAt") VALUES

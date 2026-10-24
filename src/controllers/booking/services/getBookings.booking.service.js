@@ -18,6 +18,11 @@ async function buildWhere(query) {
   }
   if (query.patientId !== undefined) where.patientId = await validateId(query.patientId, "patientId");
   if (query.doctorId !== undefined) where.doctorId = await validateId(query.doctorId, "doctorId");
+  if (query.condition !== undefined) {
+    await validateInput(query, { condition: "nullable|string|maxLength:180" });
+    const condition = query.condition.trim();
+    if (condition) where.condition = { contains: condition, mode: "insensitive" };
+  }
   if (query.status !== undefined) {
     await validateInput(query, { status: `in:${bookingStatuses.join(",")}` });
     where.status = query.status;

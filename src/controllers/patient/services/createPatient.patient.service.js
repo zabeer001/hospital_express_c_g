@@ -6,12 +6,13 @@ import { patientBookingInclude, splitPatientAndBookingData } from "./utils/patie
 
 export async function createPatientService(body) {
   const data = await validatePatient(body);
-  await ensureDoctorExists(data.doctorId);
+  const hasBooking = data.doctorId !== undefined && data.appointmentAt !== undefined;
+  if (hasBooking) await ensureDoctorExists(data.doctorId);
   const { patientData, bookingData } = splitPatientAndBookingData(data);
   const patient = await prisma.patient.create({
     data: {
       ...patientData,
-      bookings: { create: bookingData },
+      ...(hasBooking && { bookings: { create: bookingData } }),
     },
     include: patientBookingInclude,
   });

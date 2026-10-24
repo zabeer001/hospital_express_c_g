@@ -1,4 +1,9 @@
-const patientFields = ["name", "age", "gender", "phone", "condition", "status"];
+const patientFields = ["name", "age", "gender", "phone", "email"];
+const patientStatusToBookingStatus = {
+  Active: "Confirmed",
+  Monitoring: "Admitted",
+  Recovered: "Completed",
+};
 
 function splitPatientAndBookingData(data) {
   const patientData = Object.fromEntries(
@@ -12,6 +17,7 @@ function splitPatientAndBookingData(data) {
     if (data[field] !== undefined) bookingData[field] = data[field];
   }
   if (data.condition !== undefined) bookingData.condition = data.condition;
+  if (data.status !== undefined) bookingData.status = patientStatusToBookingStatus[data.status];
   if (bookingData.visitCompletedAt) bookingData.status = "Completed";
   else if (bookingData.admittedAt) bookingData.status = "Admitted";
 

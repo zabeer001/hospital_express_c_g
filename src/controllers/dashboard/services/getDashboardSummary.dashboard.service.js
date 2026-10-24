@@ -33,11 +33,14 @@ export async function getDashboardSummaryService() {
   ] = await Promise.all([
     prisma.doctor.count(),
     prisma.patient.count(),
-    prisma.patient.count({ where: { status: "Active" } }),
+    prisma.patient.count({
+      where: { bookings: { some: { status: { in: ["Pending", "Confirmed", "Admitted"] } } } },
+    }),
     prisma.booking.count({ where: { admittedAt: { gte: months.at(-1) } } }),
-    prisma.patient.groupBy({ by: ["status"], _count: { _all: true }, orderBy: { status: "asc" } }),
-    prisma.patient.groupBy({
+    prisma.booking.groupBy({ by: ["status"], _count: { _all: true }, orderBy: { status: "asc" } }),
+    prisma.booking.groupBy({
       by: ["condition"],
+      where: { condition: { not: null } },
       _count: { _all: true },
       orderBy: [{ _count: { condition: "desc" } }, { condition: "asc" }],
       take: 10,
@@ -70,6 +73,17 @@ export async function getDashboardSummaryService() {
     select: { id: true, name: true, specialization: true },
   });
   const doctorsById = new Map(doctors.map((doctor) => [doctor.id, doctor]));
+  const patientStatusCounts = statuses.reduce((counts, row) => {
+    const status = ["Pending", "Confirmed"].includes(row.status)
+      ? "Active"
+      : row.status === "Admitted"
+        ? "Monitoring"
+        : row.status === "Completed"
+          ? "Recovered"
+          : undefined;
+    if (status) counts.set(status, (counts.get(status) || 0) + row._count._all);
+    return counts;
+  }, new Map());
   const monthlyCounts = admissions.reduce((counts, row) => {
     const key = monthKey(row.admittedAt);
     counts.set(key, (counts.get(key) || 0) + 1);
@@ -78,7 +92,10 @@ export async function getDashboardSummaryService() {
 
   return {
     metrics: { totalDoctors, totalPatients, activePatients, newThisMonth },
-    patientStatuses: statuses.map((row) => ({ status: row.status, count: row._count._all })),
+    patientStatuses: ["Active", "Monitoring", "Recovered"].map((status) => ({
+      status,
+      count: patientStatusCounts.get(status) || 0,
+    })),
     topConditions: conditions.map((row) => ({ condition: row.condition, count: row._count._all })),
     monthlyAdmissions: months.map((month) => ({
       month: monthKey(month),

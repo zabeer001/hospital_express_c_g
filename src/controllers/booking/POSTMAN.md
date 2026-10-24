@@ -10,7 +10,8 @@ GET {{baseUrl}}/api/bookings?page=1&limit=20
 ```
 
 Permission: `bookings.index`. Optional filters are `search`, `patientId`,
-`doctorId`, `status`, `appointmentFrom`, and `appointmentTo`. Appointment dates
+`doctorId`, `condition`, `status`, `appointmentFrom`, and `appointmentTo`. The
+`condition` filter performs a case-insensitive partial match. Appointment dates
 use `YYYY-MM-DD`; status is one of `Pending`, `Confirmed`, `Admitted`,
 `Completed`, or `Cancelled`.
 

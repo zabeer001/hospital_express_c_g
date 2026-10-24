@@ -4,8 +4,7 @@ model Patient {
   age       Int
   gender    PatientGender
   phone     String?
-  condition String?
-  status    PatientStatus @default(Active)
+  email     String?
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
 
@@ -13,7 +12,7 @@ model Patient {
 
   @@index([name])
   @@index([phone])
+  @@index([email])
   @@index([gender])
-  @@index([status])
   @@index([createdAt])
 }
